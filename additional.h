@@ -9,15 +9,37 @@
 
 int pCount_enq = 0;
 
+int flagone = 0;
+
+int flagtwo = 0;
+
+int flipflag = 0;
+
+spinlock_t etx_spinlock;
+
+int sport = 0;
+       
+int dport = 0;
+
 int pCount_deq = 0;
 
 int pCount = 0;
 
-int barriercounter_flow[2] = {0};
+int barriercounter_flow[2] = {2};
 
-int dcounter = 0;
+int flow_counter[2] = {0};
 
-u32 pFlowid[2] = {-1, -1};
+int dcounter = 5;
+
+int ucounter = 0;
+
+int tpcounter =1;
+
+int coflowcounter = 1;
+
+int pFlowid[2] = {-1, -1};
+
+int flag[2] = {0};
 
 int firstflag = 0;
 
@@ -105,6 +127,10 @@ struct fq_sched_data {
   u32 flows;
   u32 inactive_flows;
   u32 throttled_flows;
+  u32 f1_sourceport;
+  u32 f2_sourceport;
+  u32 f1_destport;
+  u32 f2_destport;
 
   u64 stat_gc_flows;
   u64 stat_internal_packets;
@@ -122,13 +148,13 @@ struct fq_sched_data {
 
 
 
-int valuePresentInArray(unsigned val, unsigned arr[], int lengthOfarray) {
-  printk("value to be searched is %u\n", val);
+int valuePresentInArray(int val, int arr[], int lengthOfarray) {
+  printk("value to be searched is %d\n", val);
 
   int i;
 
   for (i = 0; i < lengthOfarray; i++) {
-    printk("In Array Present function Array Value is  %u\n", arr[i]);
+    printk("In Array Present function Array Value is  %d\n", arr[i]);
     if (arr[i] == val) {
       printk("In Array Present function match occured value present index value " "of %d\n", i);
       return i;
@@ -137,7 +163,7 @@ int valuePresentInArray(unsigned val, unsigned arr[], int lengthOfarray) {
   return -1;
 }
 
-static void resetFlowid(unsigned arr[], int lengthOfarray) {
+static void resetFlowid(int arr[], int lengthOfarray) {
   int i;
 
   for (i = 0; i < lengthOfarray; i++) {
