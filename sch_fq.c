@@ -150,6 +150,24 @@ static void fq_gc(struct fq_sched_data *q, struct rb_root *root,
   kmem_cache_free_bulk(fq_flow_cachep, fcnt, tofree);
 }
 
+
+int ipow(int base, int exp)
+{
+    int result = 1;
+    for (;;)
+    {
+        if (exp & 1)
+            result *= base;
+        exp >>= 1;
+        if (!exp)
+            break;
+        base *= base;
+    }
+
+    return result;
+}
+
+
 static struct fq_flow *fq_classify(struct sk_buff *skb,
                                    struct fq_sched_data *q) {
   struct rb_node **p, *parent;
@@ -228,32 +246,6 @@ static struct fq_flow *fq_classify(struct sk_buff *skb,
       if (unlikely(skb->sk == sk && f->socket_hash != sk->sk_hash)) {
         f->credit = q->initial_quantum;
         f->socket_hash = sk->sk_hash;
-        // printk("flow hash in rb tree value of each flow is  : %u \n
-        // ",f->socket_hash );
-        /*if ((pFlowid[0] == -1) && (pFlowid[1] == -1)) {
-          pFlowid[0] = f->socket_hash;
-          printk(
-              "flow pflowid 0 hash in rb tree value of each flow is  : %u \n ",
-              pFlowid[0]);
-          if (pFlowid[0] == 0) {
-            resetFlowid(pFlowid, lengthOfarray);
-          }
-        }
-
-        if ((pFlowid[0] != -1) && (pFlowid[1] == -1)) {
-          int lVal =
-              valuePresentInArray(f->socket_hash, pFlowid, lengthOfarray);
-
-          if (pFlowid[0] != f->socket_hash) pFlowid[1] = f->socket_hash;
-
-          printk(
-              "flow pflowid 1 hash in rb tree value of each flow is  : %u \n ",
-              pFlowid[1]);
-
-          if ((pFlowid[1] == 0)) {
-            resetFlowid(pFlowid, lengthOfarray);
-          }
-        }*/
 
         if (q->rate_enable)
           smp_store_release(&sk->sk_pacing_status, SK_PACING_FQ);
@@ -367,6 +359,18 @@ static bool fq_packet_beyond_horizon(const struct sk_buff *skb,
 static int fq_enqueue(struct sk_buff *skb, struct Qdisc *sch,
                       struct sk_buff **to_free) {
   struct fq_sched_data *q = qdisc_priv(sch);
+
+  printk("In enqueue adding flow data \n ");
+
+  printk("f1->sourceport  : %u \n ", q->f1_sourceport);
+
+  printk("f2->sourceport  : %u \n ", q->f2_sourceport);
+
+  printk("f1->destport  :   %u \n ", q->f1_destport);
+
+  printk("f2->destport  :   %u \n ", q->f2_destport);
+
+
   struct fq_flow *f;
 
   if (unlikely(sch->q.qlen >= sch->limit)) return qdisc_drop(skb, sch, to_free);
@@ -403,33 +407,39 @@ static int fq_enqueue(struct sk_buff *skb, struct Qdisc *sch,
   f->qlen++;
   qdisc_qstats_backlog_inc(sch, skb);
   if (fq_flow_is_detached(f)) {
-    fq_flow_add_tail(&q->new_flows, f);
-    
+
+
+  fq_flow_add_tail(&q->new_flows, f);
+
+  printk("In the Enqueue function and flow being added to the new flow data \n");
+
     int lengthOfarray = 0;
 
     int i;
 
-      for (i = 0; i < (sizeof(pFlowid) / sizeof(pFlowid[0])); i++) {
-        lengthOfarray++;
-      }
-      
-         if ((pFlowid[0] == -1) && (pFlowid[1] == -1)) {
-          pFlowid[0] = f->socket_hash;
-          printk(
-              "flow pflowid 0 hash in rb tree value of each flow is  : %u \n ",
-              pFlowid[0]);
-        }
+	//pFlowid[0] = -1;
+	//pFlowid[1] = -1;
 
-        if ((pFlowid[0] != -1) && (pFlowid[1] == -1)) {
-          int lVal =
-              valuePresentInArray(f->socket_hash, pFlowid, lengthOfarray);
 
-          if (pFlowid[0] != f->socket_hash) pFlowid[1] = f->socket_hash;
+	//if(skb->sk->sk_num != NULL)
 
-          printk(
-              "flow pflowid 1 hash in rb tree value of each flow is  : %u \n ",
-              pFlowid[1]);
-        }
+	//sport = skb->sk->sk_num;
+
+	//sport = 7869;
+
+        //dport = skb->sk->sk_dport;
+
+       //const __portpair ports = INET_COMBINED_PORTS(sport, dport);
+
+	// printk( "Source Port Number of flow is  : %d \n ", sport);
+
+       //printk("destination port of flow is  : %d \n ", dport);
+
+       //printk("skb get hash value  : %d \n ", skb_get_hash(skb));
+
+
+         printk("checking age of the flow \n");
+
 
     if (time_after(jiffies, f->age + q->flow_refill_delay))
       f->credit = max_t(u32, f->credit, q->quantum);
@@ -438,15 +448,175 @@ static int fq_enqueue(struct sk_buff *skb, struct Qdisc *sch,
 
   /* Note: this overwrites f->age */
 
-  // printk("hash of flow value : %u \n ", (f->socket_hash & q->orphan_mask) );
+     printk("hash of flow value : %u \n ", (f->socket_hash & q->orphan_mask) );
 
-  /*printk("skb get hash value  : %u \n ", skb_get_hash(skb));
+     printk("skb get hash value  : %u \n ", skb_get_hash(skb));
 
-     unsigned long pHash = skb_get_hash(skb) & q->orphan_mask;
+     //unsigned long pHash = skb_get_hash(skb) & q->orphan_mask;
 
-     printk("pHash value  : %lu \n ", pHash); */
 
-  flow_queue_add(f, skb);
+
+     //sport = skb->sk->sk_num;
+
+       //struct sock *sk = skb->sk;
+
+       //sport = skb->sk_num;
+
+       struct tcphdr *hdr = tcp_hdr(skb);
+
+       struct iphdr *iph = ip_hdr(skb);
+
+
+       sport = ntohs(hdr->source);
+
+       dport = ntohs(hdr->dest);
+
+       printk( "Source Port Number of flow is  : %d \n ", sport);
+
+       printk( "Deestination Port Number of flow is  : %d \n ", dport);
+
+       unsigned long pHash = sport;
+
+     //skb->get_port(skb, sport);
+
+
+      printk("pHash value  : %ld \n ", pHash);
+
+      f->socket_hash = pHash;
+
+      printk("flow hash value  : %d \n ", f->socket_hash);
+
+
+/*	if(sport == q->f1_sourceport)
+
+	{
+
+		if(firstflag[0])
+		{
+
+                if(pHash != pFlowid[1])
+	        pFlowid[0] = pHash;
+	        printk("flowid[0] value  : %d \n ", pFlowid[0]);
+
+	        }
+
+	        if (firstflag[0] == 0)
+		{
+
+			firstflag[0] = 1;
+		}
+
+
+	   }
+
+        if(sport == q->f2_sourceport)
+	        {
+
+	        if(firstflag[1])
+
+	        {
+
+                if(pHash != pFlowid[0])
+	        pFlowid[1] = pHash;
+	        printk("flowid[1] value  : %d \n ", pFlowid[1]);
+
+	        }
+
+	        if (firstflag[1] == 0)
+		{
+
+			firstflag[1] = 1;
+		}
+
+	        }
+
+  */
+       if (iph->protocol == IPPROTO_TCP) {
+
+       printk("TCP protocol \n");
+
+	if((sport == q->f1_sourceport) && (hdr->psh))
+	        {
+	        printk("setting flowid of first flow");
+                if(pHash != pFlowid[1])
+	        pFlowid[0] = pHash;
+	        printk("flowid[0] value  : %d \n ", pFlowid[0]);
+
+	        }
+
+        if((sport == q->f2_sourceport) && (hdr->psh))
+	        {
+	        printk("setting flowid of second flow");
+                if(pHash != pFlowid[0])
+	        pFlowid[1] = pHash;
+	        printk("flowid[1] value  : %d \n ", pFlowid[1]);
+
+	        }
+
+	      }
+
+
+	  if (iph->protocol == IPPROTO_UDP) {
+
+
+	printk("UDP protocol \n");
+
+	if(sport == q->f1_sourceport)
+	        {
+	        printk("setting flowid of first flow");
+                if(pHash != pFlowid[1])
+	        pFlowid[0] = pHash;
+	        printk("flowid[0] value  : %d \n ", pFlowid[0]);
+
+	        }
+
+        if(sport == q->f2_sourceport)
+	        {
+	        printk("setting flowid of second flow");
+                if(pHash != pFlowid[0])
+	        pFlowid[1] = pHash;
+	        printk("flowid[1] value  : %d \n ", pFlowid[1]);
+
+	        }
+
+	      }
+
+
+    printk("in enqueue adding skb to the flow \n");
+
+    if(pHash == pFlowid[0])
+    {
+    flow_queue_add(f, skb);
+    if( ucounter_flow_1 == 0)
+    {
+
+    time_first_flow_1 = ktime_get_ns();
+
+    }
+    ucounter_flow_1 ++;
+    }
+
+
+
+    if(pHash == pFlowid[1])
+    {
+    flow_queue_add(f, skb);
+    if( ucounter_flow_2 == 0)
+    {
+
+    time_first_flow_2 = ktime_get_ns();
+
+    }
+    ucounter_flow_2 ++;
+    }
+
+    else {
+    printk("in enqueue where non co flows being added \n");
+    flow_queue_add(f, skb);
+
+    }
+
+
 
   /*
 
@@ -458,24 +628,6 @@ static int fq_enqueue(struct sk_buff *skb, struct Qdisc *sch,
      time to send being modified
 
    */
-
-  int lengthOfarray = 0;
-
-  int i;
-
-  for (i = 0; i < (sizeof(pFlowid) / sizeof(pFlowid[0])); i++) {
-    lengthOfarray++;
-  }
-  int pValue = valuePresentInArray(f->socket_hash, pFlowid, lengthOfarray);
-
-  if (pValue != -1) {
-    barrier[barriercounter_flow[pValue]] =
-        barrier[barriercounter_flow[pValue]] | 1 << pValue;
-
-    fq_skb_cb(skb)->time_to_send = ktime_get_ns() + timeInterval;
-
-    barriercounter_flow[pValue]++;
-  }
 
   if (unlikely(f == &q->internal)) {
     q->stat_internal_packets++;
@@ -512,15 +664,30 @@ static void fq_check_throttled(struct fq_sched_data *q, u64 now) {
 
 static struct sk_buff *fq_dequeue(struct Qdisc *sch) {
   struct fq_sched_data *q = qdisc_priv(sch);
-  struct fq_flow_head *head;
+  struct fq_flow_head *head, *lscfhead, *lsnfhead, *lsofhead;
   struct sk_buff *skb;
   struct fq_flow *f, *coflow;
   unsigned long rate;
   int dcounter = 0;
   u32 plen;
   u64 now;
-  pFlowid[0] = 3;
-  pFlowid[1] = 5;
+  //int coflowcounter = 0;
+
+  int lengthOfarray =2;
+  int i;
+
+  //pFlowid[0] = 3;
+  //pFlowid[1] = 5;
+
+
+
+ int flag[lengthOfarray];
+
+  for (i = 0; i < lengthOfarray; i++)
+  {
+    flag[i] = 0;
+  }
+
 
   if (!sch->q.qlen) return NULL;
 
@@ -533,16 +700,86 @@ static struct sk_buff *fq_dequeue(struct Qdisc *sch) {
   q->ktime_cache = now = ktime_get_ns();
   fq_check_throttled(q, now);
 
-  /*dequeuing using barrier process*/
+//dequeuing using barrier process
+
+printk("In dequeue \n");
+
+
+ucounter = ucounter_flow_1 + ucounter_flow_2;
+
+printk("ucounter value if packets of coflows have been recieved : %d \n ", ucounter);
+
+
+if(ucounter)
+{
+
+time_nw = ktime_get_ns();
+
+time_first = max_t(u64, time_first_flow_1, time_first_flow_2);
+
+time_elapsed = time_nw - time_first;
+
+printk("time elapsed from the first packet of co-flow queue that has been added : %llu \n ", time_elapsed);
+
+}
+
+
+
+if( ((ucounter >= 2 ) && ucounter_flow_1 && ucounter_flow_2) )//|| ((time_elapsed > threshold_time ) && ucounter_flow_1 && ucounter_flow_2) )
+
+{
+
+printk("time elapsed from the first packet of co-flow queue that has been added to co-flow being dequeued :%llu \n ", time_elapsed);
+
+printk("counter value is  :%d \n ", ucounter);
+
+  flipflag = 1;
+
+  head = &q->new_flows;
+
+  f = head->first;
+
+  Promotecoflows(&q->old_flows, &q->new_flows, &q->co_flows, f, coflow,
+                   pFlowid, lengthOfarray);
+
+}
+
+
 
 begin:
+  printk("In co-flows \n");
+  if(flipflag)
+  {
+  printk("flipflag has been set \n");
   head = &q->co_flows;
-  // printk("adding In co-flow \n");
+  }
+  else
+  {
+  printk("flipflag has not been set \n");
+  head = &q->new_flows;
+  }
   if (!head->first) {
+    printk("In new-flows \n");
     head = &q->new_flows;
     if (!head->first) {
+     printk("In old-flows \n");
       head = &q->old_flows;
       if (!head->first) {
+        printk("End has reached \n");
+        /*time_nw = ktime_get_ns();
+        time_elapsed = time_nw - time_first;
+        if(!(flipflag) && ucounter && (time_elapsed > threshold_time))
+        {
+
+        head = &q->co_flows;
+
+        if(head)
+         {
+        flipflag = 1;
+        goto begin;
+         }
+        }*/
+
         if (q->time_next_delayed_flow != ~0ULL)
           qdisc_watchdog_schedule_range_ns(
               &q->watchdog, q->time_next_delayed_flow, q->timer_slack);
@@ -551,64 +788,81 @@ begin:
     }
   }
 
+
   f = head->first;
-
-  int lengthOfarray = 0;
-
-  int i;
-
-  for (i = 0; i < (sizeof(pFlowid) / sizeof(pFlowid[0])); i++) {
-    lengthOfarray++;
-  }
 
   int rValue = valuePresentInArray(f->socket_hash, pFlowid, lengthOfarray);
 
-  //printk("rValue is   : %d \n ", rValue);
 
-  // printk("barrier value  : %d \n ", barrier[dcounter]);
+ if((rValue != -1) && (head != &q->co_flows))
+ {
 
-  // Breach and membership of the flow is checked once it is satisfied all the
-  // flows are added to co-flow set at once
-  if ((rValue != -1) && (barrier[dcounter] == 3)) {
-    printk("Breach Occured \n");
-    barrier[dcounter] = 0;
-    head->first = f->next;
-    printk("adding all co-flows together \n");
-    Promotecoflows(&q->old_flows, &q->new_flows, &q->co_flows, f, coflow,
+  printk("promote clows \n ");
+
+  Promotecoflows(&q->old_flows, &q->new_flows, &q->co_flows, f, coflow,
                    pFlowid, lengthOfarray);
+  goto begin;
+
+ }
+
+
+/* if ( (ucounter == 5) && ((head != &q->co_flows)) )
+  {
+  printk("breach occured flip flag is set\n");
+
+  ucounter = 0;
+
+  flipflag =1;
+
+  goto begin;
+
+  }*/
+
+
+
+  if((flipflag) && (head == &q->co_flows))
+  {
+
+   printk("ucounter value before decrement : %u \n ", ucounter);
+
+
+   if(rValue == 0)
+   {
+   if(ucounter)
+   ucounter--;
+   if(ucounter_flow_1)
+   ucounter_flow_1 --;
+   }
+
+   if(rValue == 1)
+   {
+   if(ucounter)
+   ucounter--;
+   if(ucounter_flow_2)
+   ucounter_flow_2 --;
+   }
+
+   printk("ucounter value after decrement : %u \n ", ucounter);
+
   }
 
-  if (!barrier[dcounter]) {
-    dcounter++;
+   if (!(ucounter) && (head == &q->co_flows))
+  {
+
+  printk("breach finished flip flag has to be reset\n");
+
+  flipflag =0;
+
   }
 
-  /*demotion is defualt and we need not use any specific function because of how
-   * the flows are added to old flows if 	cedit is not enough to send the
-   * packets*/
-
-  if (f->credit <= 0) {
-    f->credit += q->quantum;
-    head->first = f->next;
-    fq_flow_add_tail(&q->old_flows, f);
-    
-     struct fq_flow_head *checkhead;
-     
-     checkhead = &q->old_flows;
-    
-     struct fq_flow *checkflowvalue;
-     
-     checkflowvalue = checkhead->first;
-     
-     while(checkflowvalue)
-     {
-     
-     printk("This is to check old flows data  socket_hash is %d \n", checkflowvalue->socket_hash);
-     
-     checkflowvalue = checkflowvalue->next; 
-     }
-     
-    goto begin;
-  }
+             printk("credit of the flow before   : %d \n ", f->credit);
+             if (f->credit <= 0)
+             {
+		f->credit += q->quantum;
+		head->first = f->next;
+		fq_flow_add_tail(&q->old_flows, f);
+		goto begin;
+	}
 
   skb = fq_peek(f);
   if (skb) {
@@ -619,7 +873,9 @@ begin:
       head->first = f->next;
       f->time_next_packet = time_next_packet;
       fq_flow_set_throttled(q, f);
+
       goto begin;
+
     }
     prefetch(&skb->end);
     if ((s64)(now - time_next_packet - q->ce_threshold) > 0) {
@@ -627,38 +883,23 @@ begin:
       q->stat_ce_mark++;
     }
     fq_dequeue_skb(sch, f, skb);
+    printk("sending the packet after dequeue \n");
   } else {
     head->first = f->next;
     /* force a pass through old_flows to prevent starvation */
-    if ((head == &q->new_flows) && q->old_flows.first) {
+    if (((head == &q->new_flows)||(head == &q->co_flows)) && q->old_flows.first) {
       fq_flow_add_tail(&q->old_flows, f);
-      
-     struct fq_flow_head *checkhead;
-     
-     checkhead = &q->old_flows;
-    
-     struct fq_flow *checkflowvalue;
-     
-     checkflowvalue = checkhead->first;
-     
-     while(checkflowvalue)
-     {
-     
-     printk("This is to check old flows data  socket_hash is %d \n", checkflowvalue->socket_hash);
-     
-     checkflowvalue = checkflowvalue->next; 
-     }
-     
-
-          
     } else {
       fq_flow_set_detached(f);
       q->inactive_flows++;
     }
     goto begin;
+
   }
   plen = qdisc_pkt_len(skb);
+  printk("credit of the flow before   : %d \n ", f->credit);
   f->credit -= plen;
+  printk("credit of the flow after   : %d \n ", f->credit);
 
   if (!q->rate_enable) goto out;
 
@@ -699,6 +940,8 @@ begin:
   }
 out:
   qdisc_bstats_update(sch, skb);
+  printk("in out sending the packet \n");
+  printk("flow hash value in out  : %d \n ", f->socket_hash);
   return skb;
 }
 
@@ -845,6 +1088,10 @@ static const struct nla_policy fq_policy[TCA_FQ_MAX + 1] = {
     [TCA_FQ_TIMER_SLACK] = {.type = NLA_U32},
     [TCA_FQ_HORIZON] = {.type = NLA_U32},
     [TCA_FQ_HORIZON_DROP] = {.type = NLA_U8},
+	[TCA_FQ_F1_SOURCEPORT] = {.type = NLA_U32},
+	[TCA_FQ_F2_SOURCEPORT] = {.type = NLA_U32},
+	[TCA_FQ_F1_DESTPORT] = {.type = NLA_U32},
+	[TCA_FQ_F2_DESTPORT] = {.type = NLA_U32},
 };
 
 static int fq_change(struct Qdisc *sch, struct nlattr *opt,
@@ -933,6 +1180,18 @@ static int fq_change(struct Qdisc *sch, struct nlattr *opt,
   if (tb[TCA_FQ_HORIZON_DROP])
     q->horizon_drop = nla_get_u8(tb[TCA_FQ_HORIZON_DROP]);
 
+  if (tb[TCA_FQ_F1_SOURCEPORT])
+    q->f1_sourceport = nla_get_u32(tb[TCA_FQ_F1_SOURCEPORT]);
+
+  if (tb[TCA_FQ_F2_SOURCEPORT])
+    q->f2_sourceport = nla_get_u32(tb[TCA_FQ_F2_SOURCEPORT]);
+
+  if (tb[TCA_FQ_F1_DESTPORT])
+    q->f1_destport = nla_get_u32(tb[TCA_FQ_F1_DESTPORT]);
+
+  if (tb[TCA_FQ_F2_DESTPORT])
+    q->f2_destport = nla_get_u32(tb[TCA_FQ_F2_DESTPORT]);
+
   if (!err) {
     sch_tree_unlock(sch);
     err = fq_resize(sch, fq_log);
@@ -940,6 +1199,7 @@ static int fq_change(struct Qdisc *sch, struct nlattr *opt,
   }
   while (sch->q.qlen > sch->limit) {
     struct sk_buff *skb = fq_dequeue(sch);
+    printk("dequeue has taken place \n");
 
     if (!skb) break;
     drop_len += qdisc_pkt_len(skb);
@@ -981,6 +1241,10 @@ static int fq_init(struct Qdisc *sch, struct nlattr *opt,
   q->fq_trees_log = ilog2(1024);
   q->orphan_mask = 1024 - 1;
   q->low_rate_threshold = 550000 / 8;
+  q->f1_sourceport = 0;
+  q->f2_sourceport = 0;
+  q->f1_destport = 0;
+  q->f2_destport = 0;
 
   q->timer_slack = 10 * NSEC_PER_USEC; /* 10 usec of hrtimer slack */
 
@@ -992,9 +1256,9 @@ static int fq_init(struct Qdisc *sch, struct nlattr *opt,
 
   qdisc_watchdog_init_clockid(&q->watchdog, sch, CLOCK_MONOTONIC);
 
-  	
+
   //testfq(sch,q);
- 	
+
   if (opt)
     err = fq_change(sch, opt, extack);
   else
@@ -1032,7 +1296,11 @@ static int fq_dump(struct Qdisc *sch, struct sk_buff *skb) {
       nla_put_u32(skb, TCA_FQ_BUCKETS_LOG, q->fq_trees_log) ||
       nla_put_u32(skb, TCA_FQ_TIMER_SLACK, q->timer_slack) ||
       nla_put_u32(skb, TCA_FQ_HORIZON, (u32)horizon) ||
-      nla_put_u8(skb, TCA_FQ_HORIZON_DROP, q->horizon_drop))
+      nla_put_u8(skb, TCA_FQ_HORIZON_DROP, q->horizon_drop)||
+	  nla_put_u32(skb, TCA_FQ_F1_SOURCEPORT, q->f1_sourceport)||
+	  nla_put_u32(skb, TCA_FQ_F2_SOURCEPORT, q->f2_sourceport)||
+	  nla_put_u32(skb, TCA_FQ_F1_DESTPORT, q->f1_destport)||
+	  nla_put_u32(skb, TCA_FQ_F2_DESTPORT, q->f2_destport))
     goto nla_put_failure;
 
   return nla_nest_end(skb, opts);
