@@ -1,7 +1,9 @@
 import socket
 import random
 host = '127.0.0.1'
-port = 12345
+portone = 12345
+porttwo = 12346
+portthree = 12347
 
 ClientSocket_One = socket.socket()
 ClientSocket_Two = socket.socket()
@@ -9,17 +11,17 @@ ClientSocket_Three = socket.socket()
 
 print('Waiting for connection')
 try:
-    ClientSocket_One.connect((host, port))
+    ClientSocket_One.connect((host, portone))
 except socket.error as e:
     print(str(e))
 Response_One = ClientSocket_One.recv(2048)
 try:
-    ClientSocket_Two.connect((host, port))
+    ClientSocket_Two.connect((host, porttwo))
 except socket.error as e:
     print(str(e))
 Response_Two = ClientSocket_Two.recv(2048)
 try:
-    ClientSocket_Three.connect((host, port))
+    ClientSocket_Three.connect((host, portthree))
 except socket.error as e:
     print(str(e))
 Response_Three = ClientSocket_Three.recv(2048)
