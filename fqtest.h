@@ -200,7 +200,7 @@ int testpromotecoflows(struct Qdisc *sch, struct fq_sched_data *q, unsigned arr[
     printk("size of array %d\n", lengthOfarray);
     
     
-    int varx = Promotecoflows(&q->old_flows, &q->new_flows, &q->co_flows, &f, &coflow, arr,lengthOfarray);
+    int varx = Promotecoflows(&coFlowsheadptr, &newFlowsheadptr, &oldFlowsheadptr, &f, arr,lengthOfarray);
  //singleton case as unit test
  
     printk("promote co flows done\n");
@@ -244,6 +244,89 @@ int testpromotecoflows(struct Qdisc *sch, struct fq_sched_data *q, unsigned arr[
            coflowptr = coflowptr->next;
    
    }
+
+
+
+
+
+
+struct fq_flow* nwflowptr = newFlowsheadptr->first;
+   
+   //printk("value of coflows %u\n", coflowptr->socket_hash);
+ 
+   //coFlowsheadptr->first = coflowptr->next;
+   
+   //coflowptr = coflowptr->next;
+   
+   if(nwflowptr)
+   printk("value of new flows next %u\n", nwflowptr->socket_hash);
+
+   if(!nwflowptr)
+   {
+
+    printk("there are no new flows to promote \n");
+   }
+   
+   
+   while(nwflowptr)
+   {
+   
+           printk("value of new flows %u\n", nwflowptr->socket_hash);
+           
+         int retVal = valuePresentInArray(nwflowptr->socket_hash, arr, lengthOfarray);
+           
+           if( retVal != -1)
+           {
+           printk("test failed flows failed transferred to coflows \n");
+           }
+           
+           nwflowptr = nwflowptr->next;
+   
+   }
+
+
+
+
+
+
+
+    struct fq_flow* oldflowptr = oldFlowsheadptr->first;
+
+    //printk("value of coflows %u\n", coflowptr->socket_hash);
+
+    //coFlowsheadptr->first = coflowptr->next;
+
+    //coflowptr = coflowptr->next;
+
+    if(oldflowptr)
+        printk("value of new flows next %u\n", oldflowptr->socket_hash);
+
+    if(!oldflowptr)
+    {
+
+        printk("there are no old flows to promote \n");
+    }
+
+
+    while(oldflowptr)
+    {
+
+        printk("value of old flows %u\n", oldflowptr->socket_hash);
+
+        int retVal = valuePresentInArray(oldflowptr->socket_hash, arr, lengthOfarray);
+
+        if( retVal != -1)
+        {
+            printk("test failed flows have not transferred to coflows \n");
+        }
+
+        oldflowptr = oldflowptr->next;
+
+    }
+
+
+
+
  
 //printk ("promote co flows test success");
 return 1;
